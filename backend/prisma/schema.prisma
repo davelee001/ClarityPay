@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id               String        @id @default(cuid())
+  name             String
+  age              Int
+  balance          Float
+  typicalTransfer  Float
+  trustedContact   String
+  trustedPhone     String
+  createdAt        DateTime      @default(now())
+  transactions     Transaction[]
+  alerts           Alert[]
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  customerId     String
+  amount         Float
+  recipient      String
+  recipientRef   String
+  isNewRecipient Boolean  @default(true)
+  riskScore      Int      @default(0)
+  riskLevel      String   @default("LOW")
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  customer       Customer @relation(fields: [customerId], references: [id])
+}
+
+model Alert {
+  id         String   @id @default(cuid())
+  customerId String
+  channel    String
+  message    String
+  status     String   @default("SIMULATED")
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id])
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  metadata  String?
+  createdAt DateTime @default(now())
+}
