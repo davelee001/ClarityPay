@@ -36,6 +36,50 @@ button {
   cursor: pointer;
 }
 
+.auth-shell {
+  display: grid;
+  place-items: center;
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.auth-panel h1 { margin: 12px 0 2px; font-size: 22px; }
+.auth-label { color: var(--muted); font-size: 12px; }
+
+.auth-input {
+  width: 100%;
+  border: 1px solid #2b405b;
+  border-radius: 8px;
+  background: #091727;
+  color: var(--text);
+  padding: 12px;
+}
+
+.auth-input:focus { outline: 2px solid rgba(69,215,255,.55); }
+.auth-error { color: #ff9aae; font-size: 13px; }
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-btn {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 13px;
+  color: var(--text);
+  background: transparent;
+}
+
 .cp-shell {
   min-height: 100vh;
   padding: 22px;
@@ -421,5 +465,6 @@ button {
 @media (max-width: 560px) {
   .cp-shell { padding: 12px; }
   .cp-topbar { align-items: flex-start; }
+  .top-actions { align-items: flex-end; flex-direction: column; }
   .transfer-grid, .profile-row, .modal-actions { grid-template-columns: 1fr; }
 }
