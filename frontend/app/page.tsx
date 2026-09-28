@@ -224,6 +224,50 @@ export default function Home() {
 
   const riskClass = risk.riskLevel.toLowerCase();
 
+  if (!authChecked) {
+    return <main className="cp-shell auth-shell"><div className="auth-panel">Checking sessionΓÇª</div></main>;
+  }
+
+  if (!authenticated) {
+    return (
+      <main className="cp-shell auth-shell">
+        <form className="auth-panel" onSubmit={signIn}>
+          <div className="brand">
+            <div className="brand-mark">CP</div>
+            <div>
+              <div className="brand-title">ClarityPay</div>
+              <div className="brand-sub">Protected demo dashboard</div>
+            </div>
+          </div>
+          <h1>Sign in</h1>
+          <label className="auth-label" htmlFor="username">Username</label>
+          <input
+            className="auth-input"
+            id="username"
+            autoComplete="username"
+            value={username}
+            onChange={event => setUsername(event.target.value)}
+            required
+          />
+          <label className="auth-label" htmlFor="password">Password</label>
+          <input
+            className="auth-input"
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={event => setPassword(event.target.value)}
+            required
+          />
+          {authError && <div className="auth-error" role="alert">{authError}</div>}
+          <button className="confirm" type="submit" disabled={authLoading}>
+            {authLoading ? "Signing inΓÇª" : "Sign in"}
+          </button>
+        </form>
+      </main>
+    );
+  }
+
   return (
     <main className="cp-shell">
       <header className="cp-topbar">
