@@ -174,13 +174,17 @@ export default function Home() {
     setRisk({ riskScore: 0, riskLevel: "LOW", signals: [] });
     setModal(false);
     setHold(false);
-    await fetch(`${API}/api/simulate-transcript`, { method: "POST" });
+    await fetch(`${API}/api/simulate-transcript`, {
+      method: "POST",
+      credentials: "include"
+    });
   }
 
   async function confirmTransfer() {
     setLoading(true);
     const res = await fetch(`${API}/api/transactions`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         amount: Number(amount),
@@ -211,7 +215,8 @@ export default function Home() {
     if (!lastTransaction) return;
 
     const res = await fetch(`${API}/api/transactions/${lastTransaction.id}/hold`, {
-      method: "POST"
+      method: "POST",
+      credentials: "include"
     });
     const data = await res.json();
 
@@ -225,7 +230,7 @@ export default function Home() {
   const riskClass = risk.riskLevel.toLowerCase();
 
   if (!authChecked) {
-    return <main className="cp-shell auth-shell"><div className="auth-panel">Checking sessionΓÇª</div></main>;
+    return <main className="cp-shell auth-shell"><div className="auth-panel">Checking session…</div></main>;
   }
 
   if (!authenticated) {
@@ -261,7 +266,7 @@ export default function Home() {
           />
           {authError && <div className="auth-error" role="alert">{authError}</div>}
           <button className="confirm" type="submit" disabled={authLoading}>
-            {authLoading ? "Signing inΓÇª" : "Sign in"}
+            {authLoading ? "Signing in…" : "Sign in"}
           </button>
         </form>
       </main>
@@ -278,9 +283,12 @@ export default function Home() {
             <div className="brand-sub">Human-context financial safety layer</div>
           </div>
         </div>
-        <button className="demo-btn" onClick={startSimulation}>
-          ▶ Start Scam Simulation
-        </button>
+        <div className="top-actions">
+          <button className="logout-btn" onClick={signOut}>Sign out</button>
+          <button className="demo-btn" onClick={startSimulation}>
+            ▶ Start Scam Simulation
+          </button>
+        </div>
       </header>
 
       <div className="grid">
