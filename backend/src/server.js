@@ -66,6 +66,51 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, service: "ClarityPay API", time: new Date().toISOString() });
 });
 
+app.post("/api/auth/login", (req, res) => {
+  const now = Date.now();
+  const client = req.socket.remoteAddress || "unknown";
+  let attempt = loginFailures.get(client);
+  if (!attempt || now - attempt.startedAt >= 15 * 60 * 1000) {
+    attempt = { startedAt: now, count: 0 };
+  }
+  if (attempt.count >= 10) {
+    res.setHeader("Retry-After", "900");
+    return res.status(429).json({ error: "Too many login attempts. Try again later." });
+  }
+
+  attempt.count += 1;
+  loginFailures.set(client, attempt);
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const username = typeof body.username === "string" ? body.username.slice(0, 256) : "";
+  const password = typeof body.password === "string" ? body.password.slice(0, 256) : "";
+  const usernameMatches = safeEqualStrings(username, authConfig.username);
+  const passwordMatches = safeEqualStrings(password, authConfig.password);
+
+  if (!usernameMatches || !passwordMatches) {
+    return res.status(401).json({ error: "Invalid username or password" });
+  }
+
+  loginFailures.delete(client);
+  const token = createSessionToken(authConfig.username, authConfig.secret);
+  res.setHeader("Set-Cookie", serializeSessionCookie(token, authConfig));
+  res.json({ authenticated: true, user: { username: authConfig.username } });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  res.setHeader("Set-Cookie", serializeSessionCookie("", authConfig, 0));
+  res.status(204).end();
+});
+
+app.get("/api/auth/session", (req, res) => {
+  const session = verifySessionToken(readSessionCookie(req.headers.cookie), authConfig.secret);
+  res.json({
+    authenticated: session?.sub === authConfig.username,
+    user: session?.sub === authConfig.username ? { username: session.sub } : null
+  });
+});
+
+app.use("/api", createAuthMiddleware(authConfig));
+
 app.get("/api/customer", async (req, res) => {
   const customer = await prisma.customer.findFirst({
     include: { transactions: { orderBy: { createdAt: "desc" }, take: 10 } }
@@ -240,9 +285,18 @@ app.post("/api/transactions", async (req, res) => {
 });
 
 app.post("/api/transactions/:id/hold", async (req, res) => {
-  const transaction = await prisma.transaction.update({
-    where: { id: req.params.id },
+  const changed = await prisma.transaction.updateMany({
+    where: { id: req.params.id, status: "INTERCEPTED" },
     data: { status: "PAUSED_24H" },
+  });
+  if (changed.count === 0) {
+    const exists = await prisma.transaction.findUnique({ where: { id: req.params.id }, select: { id: true } });
+    return res.status(exists ? 409 : 404).json({
+      error: exists ? "Only intercepted transactions can be placed on hold" : "Transaction not found"
+    });
+  }
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: req.params.id },
     include: { customer: true }
   });
 
@@ -270,10 +324,17 @@ app.post("/api/transactions/:id/hold", async (req, res) => {
 });
 
 app.post("/api/transactions/:id/release", async (req, res) => {
-  const transaction = await prisma.transaction.update({
-    where: { id: req.params.id },
+  const changed = await prisma.transaction.updateMany({
+    where: { id: req.params.id, status: "PAUSED_24H" },
     data: { status: "RELEASED" }
   });
+  if (changed.count === 0) {
+    const exists = await prisma.transaction.findUnique({ where: { id: req.params.id }, select: { id: true } });
+    return res.status(exists ? 409 : 404).json({
+      error: exists ? "Only transactions on hold can be released" : "Transaction not found"
+    });
+  }
+  const transaction = await prisma.transaction.findUnique({ where: { id: req.params.id } });
 
   await audit("RELEASE", "Transaction released from hold", {
     transactionId: transaction.id
