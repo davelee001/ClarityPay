@@ -67,19 +67,39 @@ export default function Home() {
     []
   );
 
-  async function loadInitial() {
-    const [customerRes, auditRes] = await Promise.all([
-      fetch(`${API}/api/customer`),
-      fetch(`${API}/api/audit`)
-    ]);
-    if (customerRes.ok) setCustomer(await customerRes.json());
-    if (auditRes.ok) setAudits(await auditRes.json());
-  }
+  useEffect(() => {
+    let active = true;
+    fetch(`${API}/api/auth/session`, { credentials: "include" })
+      .then(response => response.json())
+      .then(data => {
+        if (active) setAuthenticated(data.authenticated === true);
+      })
+      .catch(() => {
+        if (active) setAuthError("Unable to connect to the ClarityPay API.");
+      })
+      .finally(() => {
+        if (active) setAuthChecked(true);
+      });
+
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
-    loadInitial();
+    if (!authenticated) return;
 
-    const source = new EventSource(`${API}/api/events`);
+    let active = true;
+    Promise.all([
+      fetch(`${API}/api/customer`, { credentials: "include" }),
+      fetch(`${API}/api/audit`, { credentials: "include" })
+    ]).then(async ([customerRes, auditRes]) => {
+      if (!active) return;
+      if (customerRes.ok) setCustomer(await customerRes.json());
+      if (auditRes.ok) setAudits(await auditRes.json());
+    }).catch(() => {
+      if (active) setAuthError("Unable to load dashboard data.");
+    });
+
+    const source = new EventSource(`${API}/api/events`, { withCredentials: true });
     source.onmessage = event => {
       const data = JSON.parse(event.data);
 
@@ -100,8 +120,11 @@ export default function Home() {
       }
     };
 
-    return () => source.close();
-  }, []);
+    return () => {
+      active = false;
+      source.close();
+    };
+  }, [authenticated]);
 
   useEffect(() => {
     transcriptRef.current?.scrollTo({
