@@ -1,5 +1,6 @@
 'use client';
 
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Customer = {
@@ -132,6 +133,41 @@ export default function Home() {
       behavior: "smooth"
     });
   }, [transcript]);
+
+  async function signIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const response = await fetch(`${API}/api/auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setAuthError(data.error || "Sign-in failed.");
+        return;
+      }
+      setPassword("");
+      setAuthenticated(true);
+    } catch {
+      setAuthError("Unable to connect to the ClarityPay API.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function signOut() {
+    await fetch(`${API}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include"
+    }).catch(() => undefined);
+    setAuthenticated(false);
+    setHold(false);
+    setModal(false);
+  }
 
   async function startSimulation() {
     setTranscript("");
