@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
