@@ -54,6 +54,12 @@ export default function Home() {
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [hold, setHold] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   const currency = useMemo(
