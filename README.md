@@ -37,6 +37,14 @@ npx prisma migrate dev --name init
 npm run dev
 ```
 
+Before starting the backend, set `AUTH_USERNAME`, `AUTH_PASSWORD` (at least 16 characters), and `SESSION_SECRET` (at least 32 random bytes) in `backend/.env`. Generate a session secret with:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
+```
+
+The dashboard prompts for these credentials. The backend uses a signed, HTTP-only session cookie; keep the frontend and API on the same site. For HTTPS deployments, set `AUTH_COOKIE_SECURE=true`. This is a single shared demo operator account, not per-customer identity or production authorization.
+
 Backend: http://localhost:4000
 
 ### Frontend
